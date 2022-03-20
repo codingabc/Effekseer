@@ -426,7 +426,8 @@ bool Material::FindLoop(std::shared_ptr<Pin> pin1, std::shared_ptr<Pin> pin2)
 
 	std::function<bool(std::weak_ptr<Node>)> visit;
 
-	visit = [&](std::weak_ptr<Node> node) -> bool {
+	visit = [&](std::weak_ptr<Node> node) -> bool
+	{
 		auto locked_node = node.lock();
 
 		for (auto p : locked_node->OutputPins)
@@ -1211,6 +1212,12 @@ std::shared_ptr<Node> Material::CreateNode(std::shared_ptr<NodeParameter> parame
 		auto np = std::make_shared<NodeProperty>();
 		np->Floats = parameter->Properties[i]->DefaultValues;
 		np->Str = parameter->Properties[i]->DefaultStr;
+
+		if (parameter->Properties[i]->Type == ValueType::Gradient)
+		{
+			np->Gradient = Gradient{};
+		}
+
 		np->Parent = node;
 
 		node->Properties.push_back(np);
@@ -1229,11 +1236,13 @@ std::shared_ptr<Node> Material::CreateNode(std::shared_ptr<NodeParameter> parame
 	else
 	{
 		auto command = std::make_shared<DelegateCommand>(
-			[this, val_new]() -> void {
+			[this, val_new]() -> void
+			{
 				this->nodes_ = val_new;
 				this->UpdateWarnings();
 			},
-			[this, val_old]() -> void {
+			[this, val_old]() -> void
+			{
 				this->nodes_ = val_old;
 				this->UpdateWarnings();
 			});
@@ -1272,12 +1281,14 @@ void Material::RemoveNode(std::shared_ptr<Node> node)
 	}
 
 	auto command = std::make_shared<DelegateCommand>(
-		[this, nodes_new, links_new]() -> void {
+		[this, nodes_new, links_new]() -> void
+		{
 			this->nodes_ = nodes_new;
 			this->links_ = links_new;
 			this->UpdateWarnings();
 		},
-		[this, nodes_old, links_old]() -> void {
+		[this, nodes_old, links_old]() -> void
+		{
 			this->nodes_ = nodes_old;
 			this->links_ = links_old;
 			this->UpdateWarnings();
@@ -1399,12 +1410,14 @@ ConnectResultType Material::ConnectPin(std::shared_ptr<Pin> pin1, std::shared_pt
 	links_new.push_back(link);
 
 	auto command = std::make_shared<DelegateCommand>(
-		[this, links_new, p1]() -> void {
+		[this, links_new, p1]() -> void
+		{
 			this->links_ = links_new;
 			this->UpdateWarnings();
 			this->MakeDirty(p1->Parent.lock());
 		},
-		[this, links_old, p1]() -> void {
+		[this, links_old, p1]() -> void
+		{
 			this->links_ = links_old;
 			this->UpdateWarnings();
 			this->MakeDirty(p1->Parent.lock());
@@ -1425,7 +1438,8 @@ bool Material::BreakPin(std::shared_ptr<Link> link)
 	auto inputNode = link->InputPin->Parent.lock();
 
 	auto command = std::make_shared<DelegateCommand>(
-		[this, links_new, inputNode]() -> void {
+		[this, links_new, inputNode]() -> void
+		{
 			this->links_ = links_new;
 			this->UpdateWarnings();
 			if (inputNode != nullptr)
@@ -1433,7 +1447,8 @@ bool Material::BreakPin(std::shared_ptr<Link> link)
 				MakeDirty(inputNode);
 			}
 		},
-		[this, links_old, inputNode]() -> void {
+		[this, links_old, inputNode]() -> void
+		{
 			this->links_ = links_old;
 			this->UpdateWarnings();
 			if (inputNode != nullptr)
@@ -1622,11 +1637,13 @@ void Material::ChangeValueTextureType(std::shared_ptr<TextureInfo> prop, Texture
 	auto value_new = type;
 
 	auto command = std::make_shared<DelegateCommand>(
-		[prop, value_new, this]() -> void {
+		[prop, value_new, this]() -> void
+		{
 			prop->Type = value_new;
 			// TODO make content dirty
 		},
-		[prop, value_old, this]() -> void {
+		[prop, value_old, this]() -> void
+		{
 			prop->Type = value_old;
 			// TODO make content dirty
 		});
@@ -1777,7 +1794,7 @@ bool Material::Save(std::vector<uint8_t>& data, const char* basePath)
 	// header
 
 	const char* prefix = "EFKM";
-	int version = MaterialVersion16;
+	int version = MaterialVersion17;
 
 	size_t offset = 0;
 
@@ -1899,6 +1916,43 @@ bool Material::Save(std::vector<uint8_t>& data, const char* basePath)
 		bwParam.Push(param->DefaultConstants[3]);
 	}
 
+	{
+		bwParam.Push(static_cast<int32_t>(result.Gradients.size()));
+
+		for (size_t i = 0; i < result.Gradients.size(); i++)
+		{
+			auto& param = result.Gradients[i];
+
+			auto name_ = GetVectorFromStr(Replace(param->Name, "$SUFFIX", ""));
+			bwParam.Push(name_);
+
+			auto uniformName = GetVectorFromStr(param->UniformName);
+			bwParam.Push(uniformName);
+			bwParam.Push(param->IsParam);
+			bwParam.Push(param->Offset);
+			bwParam.Push(param->Priority);
+
+			bwParam.Push(param->Defaults.ColorCount);
+
+			for (int j = 0; j < param->Defaults.ColorCount; i++)
+			{
+				bwParam.Push(param->Defaults.Colors[j].Position);
+				bwParam.Push(param->Defaults.Colors[j].Color[0]);
+				bwParam.Push(param->Defaults.Colors[j].Color[1]);
+				bwParam.Push(param->Defaults.Colors[j].Color[2]);
+				bwParam.Push(param->Defaults.Colors[j].Intensity);
+			}
+
+			bwParam.Push(param->Defaults.AlphaCount);
+
+			for (int j = 0; j < param->Defaults.AlphaCount; i++)
+			{
+				bwParam.Push(param->Defaults.Alphas[j].Position);
+				bwParam.Push(param->Defaults.Alphas[j].Alpha);
+			}
+		}
+	}
+
 	const char* chunk_para = "PRM_";
 	auto size_para = static_cast<int32_t>(bwParam.GetBuffer().size());
 
@@ -1959,6 +2013,22 @@ bool Material::Save(std::vector<uint8_t>& data, const char* basePath)
 			bwParam2.Push(static_cast<uint32_t>(descInd));
 			bwParam2.Push(GetVectorFromStr(result.Uniforms[i]->Descriptions[descInd]->Summary));
 			bwParam2.Push(GetVectorFromStr(result.Uniforms[i]->Descriptions[descInd]->Detail));
+		}
+	}
+
+	{
+		bwParam2.Push(static_cast<int32_t>(result.Gradients.size()));
+
+		for (size_t i = 0; i < result.Gradients.size(); i++)
+		{
+			bwParam2.Push(static_cast<int32_t>(result.Gradients[i]->Descriptions.size()));
+
+			for (size_t descInd = 0; descInd < result.Gradients[i]->Descriptions.size(); descInd++)
+			{
+				bwParam2.Push(static_cast<uint32_t>(descInd));
+				bwParam2.Push(GetVectorFromStr(result.Gradients[i]->Descriptions[descInd]->Summary));
+				bwParam2.Push(GetVectorFromStr(result.Gradients[i]->Descriptions[descInd]->Detail));
+			}
 		}
 	}
 

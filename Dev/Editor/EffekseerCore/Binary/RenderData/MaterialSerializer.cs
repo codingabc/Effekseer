@@ -65,7 +65,9 @@ namespace Effekseer.Binary.RenderData
 			AddTextureInfo(version, texToIndex, aggregator);
 		}
 
-		private void AddAsFile(TextureValuesAggregator aggregator,
+		private void AddAsFile(
+			ExporterVersion version,
+			TextureValuesAggregator aggregator,
 			Data.RendererCommonValues value,
 			SortedDictionary<string, int> texToIndex,
 			SortedDictionary<string, int> normalToIndex,
@@ -114,6 +116,18 @@ namespace Effekseer.Binary.RenderData
 				aggregator.AddFloat(floats[2]);
 				aggregator.AddFloat(floats[3]);
 			}
+
+			if (version >= ExporterVersion.Ver17Alpha2)
+			{
+				// TODO
+				var gradients = value.MaterialFile.GetGradients(materialInfo);
+
+				aggregator.AddInt(gradients.Count);
+
+				foreach (var gradient in gradients)
+				{
+				}
+			}
 		}
 
 		public void AddMaterialData(ExporterVersion version,
@@ -136,7 +150,7 @@ namespace Effekseer.Binary.RenderData
 					AddAsLighting(version, texToIndex, normalToIndex, value, aggregator);
 					break;
 				default:
-					AddAsFile(aggregator, value, texToIndex, normalToIndex, materialToIndex);
+					AddAsFile(version, aggregator, value, texToIndex, normalToIndex, materialToIndex);
 					break;
 			}
 		}

@@ -3,6 +3,7 @@
 #define __EFFEKSEER_MATERIAL_H__
 
 #include "../Effekseer.Base.Pre.h"
+#include "../Parameter/Effekseer.Parameters.h"
 #include "../Utils/BinaryVersion.h"
 #include <array>
 #include <assert.h>
@@ -33,6 +34,12 @@ private:
 		int32_t Index;
 	};
 
+	struct GradientParameter
+	{
+		std::string Name;
+		Gradient Data;
+	};
+
 	uint64_t guid_ = 0;
 
 	std::string genericCode_;
@@ -50,7 +57,9 @@ private:
 
 	std::vector<Uniform> uniforms_;
 
-	static const int32_t LatestSupportVersion = MaterialVersion16;
+	std::vector<GradientParameter> gradients_;
+
+	static const int32_t LatestSupportVersion = MaterialVersion17;
 	static const int32_t OldestSupportVersion = 0;
 
 public:
@@ -108,6 +117,12 @@ public:
 	virtual int32_t GetUniformCount() const;
 
 	virtual void SetUniformCount(int32_t count);
+
+	virtual const char* GetGradientName(int32_t index) const;
+
+	virtual int32_t GetGradientCount() const;
+
+	virtual void SetGradientCount(int32_t count);
 
 	virtual int32_t GetCustomData1Count() const;
 
