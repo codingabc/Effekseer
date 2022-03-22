@@ -119,13 +119,14 @@ namespace Effekseer.Binary.RenderData
 
 			if (version >= ExporterVersion.Ver17Alpha2)
 			{
-				// TODO
 				var gradients = value.MaterialFile.GetGradients(materialInfo);
 
 				aggregator.AddInt(gradients.Count);
 
 				foreach (var gradient in gradients)
 				{
+					var gradientValue = gradient.Item1.Value as Data.Value.Gradient;
+					aggregator.AddData(gradientValue.ToBinary());
 				}
 			}
 		}

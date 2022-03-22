@@ -936,6 +936,8 @@ struct MaterialRenderData
 
 	//! used uniforms in MaterialType::File
 	std::vector<std::array<float, 4>> MaterialUniforms;
+
+	std::vector<Gradient> MaterialGradients;
 };
 
 /**

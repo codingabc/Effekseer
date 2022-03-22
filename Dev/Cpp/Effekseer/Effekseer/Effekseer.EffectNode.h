@@ -151,7 +151,8 @@ struct LocationAbsParameter
 {
 	LocationAbsType type = LocationAbsType::None;
 
-	union {
+	union
+	{
 		struct
 		{
 
@@ -352,6 +353,19 @@ struct ParameterRendererCommon
 					memcpy(MaterialData.MaterialUniforms.data(), pos, sizeof(float) * 4 * uniforms);
 				}
 				pos += (sizeof(float) * 4 * uniforms);
+
+				if (version >= Version17Alpha2)
+				{
+					int gradients = 0;
+					memcpy(&gradients, pos, sizeof(int));
+					pos += sizeof(int);
+
+					MaterialData.MaterialGradients.resize(gradients);
+					for (size_t i = 0; i < MaterialData.MaterialGradients.size(); i++)
+					{
+						MaterialData.MaterialGradients[i].Load(pos, version);
+					}
+				}
 			}
 		}
 		else
