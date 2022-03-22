@@ -162,6 +162,8 @@ namespace Effekseer.Utl
 
 		public GradientInformation[] Gradients = new GradientInformation[0];
 
+		public GradientInformation[] FixedGradients = new GradientInformation[0];
+
 		public CustomDataInformation[] CustomData = new CustomDataInformation[0];
 
 		public UInt64 GUID;
@@ -371,49 +373,54 @@ namespace Effekseer.Utl
 
 					if (version >= (int)MaterialVersion.Version17)
 					{
-						int gradientCount = 0;
-						reader.Get(ref gradientCount);
-
-						var gradients = new List<GradientInformation>();
-
-						for (int i = 0; i < gradientCount; i++)
+						GradientInformation[] LoadGradient()
 						{
-							var info = new GradientInformation();
+							int gradientCount = 0;
+							reader.Get(ref gradientCount);
 
+							var gradients = new List<GradientInformation>();
 
-							reader.Get(ref info.Name, Encoding.UTF8);
-							reader.Get(ref info.UniformName, Encoding.UTF8);
-							reader.Get(ref info.IsParam);
-							reader.Get(ref info.Offset);
-							reader.Get(ref info.Priority);
-
-							int colorCount = 0;
-							reader.Get(ref colorCount);
-
-							info.Data.ColorMarkers = new Data.Value.Gradient.ColorMarker[colorCount];
-							for (int j = 0; j < colorCount; j++)
+							for (int i = 0; i < gradientCount; i++)
 							{
-								reader.Get(ref info.Data.ColorMarkers[j].Position);
-								reader.Get(ref info.Data.ColorMarkers[j].ColorR);
-								reader.Get(ref info.Data.ColorMarkers[j].ColorG);
-								reader.Get(ref info.Data.ColorMarkers[j].ColorB);
-								reader.Get(ref info.Data.ColorMarkers[j].Intensity);
+								var info = new GradientInformation();
+
+
+								reader.Get(ref info.Name, Encoding.UTF8);
+								reader.Get(ref info.UniformName, Encoding.UTF8);
+								reader.Get(ref info.Offset);
+								reader.Get(ref info.Priority);
+
+								int colorCount = 0;
+								reader.Get(ref colorCount);
+
+								info.Data.ColorMarkers = new Data.Value.Gradient.ColorMarker[colorCount];
+								for (int j = 0; j < colorCount; j++)
+								{
+									reader.Get(ref info.Data.ColorMarkers[j].Position);
+									reader.Get(ref info.Data.ColorMarkers[j].ColorR);
+									reader.Get(ref info.Data.ColorMarkers[j].ColorG);
+									reader.Get(ref info.Data.ColorMarkers[j].ColorB);
+									reader.Get(ref info.Data.ColorMarkers[j].Intensity);
+								}
+
+								int alphaCount = 0;
+								reader.Get(ref alphaCount);
+
+								info.Data.AlphaMarkers = new Data.Value.Gradient.AlphaMarker[colorCount];
+								for (int j = 0; j < colorCount; j++)
+								{
+									reader.Get(ref info.Data.AlphaMarkers[j].Position);
+									reader.Get(ref info.Data.AlphaMarkers[j].Alpha);
+								}
+
+								gradients.Add(info);
 							}
 
-							int alphaCount = 0;
-							reader.Get(ref alphaCount);
-
-							info.Data.AlphaMarkers = new Data.Value.Gradient.AlphaMarker[colorCount];
-							for (int j = 0; j < colorCount; j++)
-							{
-								reader.Get(ref info.Data.AlphaMarkers[j].Position);
-								reader.Get(ref info.Data.AlphaMarkers[j].Alpha);
-							}
-
-							gradients.Add(info);
+							return gradients.ToArray();
 						}
 
-						Gradients = gradients.ToArray();
+						Gradients = LoadGradient();
+						FixedGradients = LoadGradient();
 					}
 				}
 
@@ -785,7 +792,6 @@ namespace Effekseer.Utl
 		{
 			public string Name;
 			public string UniformName;
-			public bool IsParam;
 			public int Offset;
 
 			public Data.Value.Gradient.State Data;

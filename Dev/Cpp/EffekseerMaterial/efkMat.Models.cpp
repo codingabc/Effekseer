@@ -1791,6 +1791,7 @@ ErrorCode Material::Load(std::vector<uint8_t>& data, std::shared_ptr<Library> li
 
 bool Material::Save(std::vector<uint8_t>& data, const char* basePath)
 {
+
 	// header
 
 	const char* prefix = "EFKM";
@@ -1916,19 +1917,19 @@ bool Material::Save(std::vector<uint8_t>& data, const char* basePath)
 		bwParam.Push(param->DefaultConstants[3]);
 	}
 
+	const auto pushGradient = [&](const std::vector<std::shared_ptr<TextExporterGradient>>& gradients)
 	{
-		bwParam.Push(static_cast<int32_t>(result.Gradients.size()));
+		bwParam.Push(static_cast<int32_t>(gradients.size()));
 
-		for (size_t i = 0; i < result.Gradients.size(); i++)
+		for (size_t i = 0; i < gradients.size(); i++)
 		{
-			auto& param = result.Gradients[i];
+			auto& param = gradients[i];
 
 			auto name_ = GetVectorFromStr(Replace(param->Name, "$SUFFIX", ""));
 			bwParam.Push(name_);
 
 			auto uniformName = GetVectorFromStr(param->UniformName);
 			bwParam.Push(uniformName);
-			bwParam.Push(param->IsParam);
 			bwParam.Push(param->Offset);
 			bwParam.Push(param->Priority);
 
@@ -1951,7 +1952,10 @@ bool Material::Save(std::vector<uint8_t>& data, const char* basePath)
 				bwParam.Push(param->Defaults.Alphas[j].Alpha);
 			}
 		}
-	}
+	};
+
+	pushGradient(result.Gradients);
+	pushGradient(result.FixedGradients);
 
 	const char* chunk_para = "PRM_";
 	auto size_para = static_cast<int32_t>(bwParam.GetBuffer().size());

@@ -172,44 +172,47 @@ bool MaterialFile::Load(const uint8_t* data, int32_t size)
 
 			if (version >= MaterialVersion17)
 			{
-				int gradientCount = 0;
-				memcpy(&gradientCount, data + offset, 4);
-				offset += sizeof(int);
-
-				for (auto i = 0; i < gradientCount; i++)
+				const auto loadGradient = [&](std::vector<GradientParameter>& gradients)
 				{
-					GradientParameter gradient;
-
-					int strNameLength = 0;
-					memcpy(&strNameLength, data + offset, 4);
+					int gradientCount = 0;
+					memcpy(&gradientCount, data + offset, 4);
 					offset += sizeof(int);
 
-					auto name = std::string((const char*)(data + offset));
-					offset += strNameLength;
+					for (auto i = 0; i < gradientCount; i++)
+					{
+						GradientParameter gradient;
 
-					int strUniformNameLength = 0;
-					memcpy(&strUniformNameLength, data + offset, 4);
-					offset += sizeof(int);
+						int strNameLength = 0;
+						memcpy(&strNameLength, data + offset, 4);
+						offset += sizeof(int);
 
-					name = std::string((const char*)(data + offset));
-					offset += strUniformNameLength;
+						auto name = std::string((const char*)(data + offset));
+						offset += strNameLength;
 
-					// param
-					offset += sizeof(int);
+						int strUniformNameLength = 0;
+						memcpy(&strUniformNameLength, data + offset, 4);
+						offset += sizeof(int);
 
-					// offset
-					offset += sizeof(int);
+						name = std::string((const char*)(data + offset));
+						offset += strUniformNameLength;
 
-					// priority
-					offset += sizeof(int);
+						// offset
+						offset += sizeof(int);
 
-					uint8_t* pos = const_cast<uint8_t*>(data + offset);
-					gradient.Data.Load(pos, 0);
+						// priority
+						offset += sizeof(int);
 
-					offset += (pos - data);
+						uint8_t* pos = const_cast<uint8_t*>(data + offset);
+						gradient.Data.Load(pos, 0);
 
-					gradients_.emplace_back(gradient);
-				}
+						offset += (pos - data);
+
+						gradients.emplace_back(gradient);
+					}
+				};
+
+				loadGradient(gradients_);
+				loadGradient(fixedGradients_);
 			}
 		}
 		else if (std::string("GENE") == std::string(chunk))

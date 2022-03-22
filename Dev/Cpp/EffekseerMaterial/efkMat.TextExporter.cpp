@@ -555,7 +555,7 @@ TextExporterResult TextExporter::Export(std::shared_ptr<Material> material, std:
 					if (node->Parameter->Type == NodeType::Gradient)
 					{
 						extractedGradient = std::make_shared<TextExporterGradient>();
-						extractedGradient->IsParam = false;
+						extractedGradient->IsFixed = true;
 						extractedGradient->GUID = node->GUID;
 						extractedGradient->Defaults = *node->GetProperty("Gradient")->Gradient;
 						extractedGradients[node->GUID] = extractedGradient;
@@ -565,7 +565,7 @@ TextExporterResult TextExporter::Export(std::shared_ptr<Material> material, std:
 						auto paramName = node->GetProperty("Name")->Str;
 						extractedGradient = std::make_shared<TextExporterGradient>();
 						extractedGradient->Name = paramName;
-						extractedGradient->IsParam = true;
+						extractedGradient->IsFixed = false;
 						extractedGradient->Priority = static_cast<int32_t>(node->GetProperty("Priority")->Floats[0]);
 						extractedGradient->Descriptions = node->Descriptions;
 						extractedGradient->GUID = node->GUID;
@@ -719,7 +719,7 @@ TextExporterResult TextExporter::Export(std::shared_ptr<Material> material, std:
 					else
 					{
 						extractedGradient = std::make_shared<TextExporterGradient>();
-						extractedGradient->IsParam = false;
+						extractedGradient->IsFixed = true;
 						extractedGradient->Defaults = *node->GetProperty("Gradient")->Gradient;
 						extractedGradient->GUID = node->GUID;
 						extractedGradients[node->GUID] = extractedGradient;
@@ -754,7 +754,16 @@ TextExporterResult TextExporter::Export(std::shared_ptr<Material> material, std:
 
 		for (auto enode : exportedNodes)
 		{
+			auto node = enode->Target;
+
+			if (node->Parameter->Type == NodeType::SampleGradient)
+			{
+				const auto& tePin = enode->Inputs.back();
+				extractedGradientsTemp[tePin.GradientValue->GUID] = tePin.GradientValue;
+			}
 		}
+
+		extractedGradients = extractedGradientsTemp;
 	}
 
 	// get output node
@@ -812,12 +821,11 @@ TextExporterResult TextExporter::Export(std::shared_ptr<Material> material, std:
 
 	// Assign Gradients
 	{
-		// TODO
 		int paramInd = 0;
 		int constInd = 0;
 		for (auto& extracted : extractedGradients)
 		{
-			extracted.second->UniformName = "efk_uniform_" + std::to_string(extracted.first);
+			extracted.second->UniformName = "efk_gradient_" + std::to_string(extracted.first);
 
 			if (!IsValidName(extracted.second->Name.c_str()) || usedName.count(extracted.second->Name) > 0)
 			{
@@ -825,19 +833,17 @@ TextExporterResult TextExporter::Export(std::shared_ptr<Material> material, std:
 			}
 			usedName.insert(extracted.second->Name);
 
-			if (extracted.second->IsParam)
-			{
-				extracted.second->Offset = paramInd;
-				paramInd++;
-			}
-			else
+			if (extracted.second->IsFixed)
 			{
 				extracted.second->Offset = constInd;
 				constInd++;
 			}
+			else
+			{
+				extracted.second->Offset = paramInd;
+				paramInd++;
+			}
 		}
-
-		// Add sample node
 	}
 
 	// for output
@@ -918,6 +924,9 @@ TextExporterResult TextExporter::Export(std::shared_ptr<Material> material, std:
 	std::vector<std::shared_ptr<TextExporterUniform>> uniforms;
 	std::vector<std::shared_ptr<TextExporterTexture>> textures;
 
+	std::vector<std::shared_ptr<TextExporterGradient>> gradients;
+	std::vector<std::shared_ptr<TextExporterGradient>> fixedGradients;
+
 	for (auto& kv : extractedTextures)
 	{
 		textures.push_back(kv.second);
@@ -928,6 +937,18 @@ TextExporterResult TextExporter::Export(std::shared_ptr<Material> material, std:
 		uniforms.push_back(kv.second);
 	}
 
+	for (auto& kv : extractedGradients)
+	{
+		if (kv.second->IsFixed)
+		{
+			fixedGradients.emplace_back(kv.second);
+		}
+		else
+		{
+			gradients.emplace_back(kv.second);
+		}
+	}
+
 	uniform_textures << ExportUniformAndTextures(uniforms, textures);
 
 	TextExporterResult result;
@@ -935,6 +956,8 @@ TextExporterResult TextExporter::Export(std::shared_ptr<Material> material, std:
 	result.ShadingModel = option.ShadingModel;
 	result.Uniforms = uniforms;
 	result.Textures = textures;
+	result.FixedGradients = fixedGradients;
+	result.Gradients = gradients;
 	result.HasRefraction = option.HasRefraction;
 	result.CustomData1 = customData1Count;
 	result.CustomData2 = customData2Count;
@@ -1553,7 +1576,7 @@ std::string TextExporter::ExportNode(std::shared_ptr<TextExporterNode> node)
 		// TODO
 		assert(node->Inputs[0].GradientValue != nullptr);
 		const auto& gradient = node->Inputs[0].GradientValue;
-		if (gradient->IsParam)
+		if (gradient->IsFixed)
 		{
 		}
 		else

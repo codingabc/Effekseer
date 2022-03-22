@@ -568,11 +568,6 @@ namespace Effekseer.Data
 					if (foundValue != null)
 					{
 						status = foundValue;
-						if (status.IsShown != gradient.IsParam)
-						{
-							status.IsShown = gradient.IsParam;
-							isChanged = true;
-						}
 
 						var target = foundValue.Value as Value.Gradient;
 
@@ -592,7 +587,7 @@ namespace Effekseer.Data
 						status = new ValueStatus();
 						var value = new Value.Gradient();
 						status.Value = value;
-						status.IsShown = gradient.IsParam;
+						status.IsShown = true;
 						status.Priority = gradient.Priority;
 						valueStatuses.Add(status);
 

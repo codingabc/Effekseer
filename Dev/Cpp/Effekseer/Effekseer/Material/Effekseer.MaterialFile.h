@@ -59,6 +59,8 @@ private:
 
 	std::vector<GradientParameter> gradients_;
 
+	std::vector<GradientParameter> fixedGradients_;
+
 	static const int32_t LatestSupportVersion = MaterialVersion17;
 	static const int32_t OldestSupportVersion = 0;
 

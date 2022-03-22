@@ -44,7 +44,7 @@ struct TextExporterGradient
 {
 	std::string Name;
 	std::string UniformName;
-	bool IsParam = false;
+	bool IsFixed = false;
 	Gradient Defaults;
 	int32_t Offset;
 	int32_t Priority = 1;
@@ -87,6 +87,7 @@ struct TextExporterResult
 	std::vector<std::shared_ptr<TextExporterUniform>> Uniforms;
 	std::vector<std::shared_ptr<TextExporterTexture>> Textures;
 	std::vector<std::shared_ptr<TextExporterGradient>> Gradients;
+	std::vector<std::shared_ptr<TextExporterGradient>> FixedGradients;
 };
 
 class TextExporterOutputOption
