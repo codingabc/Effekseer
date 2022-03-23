@@ -87,6 +87,8 @@ void Compile(std::shared_ptr<Graphics> graphics,
 			 std::shared_ptr<Node> node,
 			 std::vector<std::shared_ptr<TextureWithSampler>>& outputTextures,
 			 std::vector<std::shared_ptr<TextExporterUniform>>& outputUniforms,
+			 std::vector<std::shared_ptr<TextExporterGradient>>& gradients,
+			 std::vector<std::shared_ptr<TextExporterGradient>>& fixedGradients,
 			 std::string& vs,
 			 std::string& ps)
 {
@@ -765,9 +767,12 @@ void Editor::UpdateNodes()
 
 			std::vector<std::shared_ptr<TextExporterUniform>> uniforms;
 			std::vector<std::shared_ptr<TextureWithSampler>> textures;
+			std::vector<std::shared_ptr<TextExporterGradient>> gradients;
+			std::vector<std::shared_ptr<TextExporterGradient>> fixedGradients;
+
 			std::string vs;
 			std::string ps;
-			Compile(graphics_, material, node, textures, uniforms, vs, ps);
+			Compile(graphics_, material, node, textures, uniforms, gradients, fixedGradients, vs, ps);
 
 			// update pin state
 			for (auto behavior : node->Parameter->BehaviorComponents)
@@ -782,7 +787,7 @@ void Editor::UpdateNodes()
 				}
 			}
 
-			preview_->CompileShader(vs, ps, textures, uniforms);
+			preview_->CompileShader(vs, ps, textures, uniforms, gradients, fixedGradients);
 			previewTextureCount_ = textures.size();
 			previewUniformCount_ = uniforms.size();
 		}
@@ -841,9 +846,12 @@ void Editor::UpdateNodes()
 
 			std::vector<std::shared_ptr<TextExporterUniform>> uniforms;
 			std::vector<std::shared_ptr<TextureWithSampler>> textures;
+			std::vector<std::shared_ptr<TextExporterGradient>> gradients;
+			std::vector<std::shared_ptr<TextExporterGradient>> fixedGradients;
+
 			std::string vs;
 			std::string ps;
-			Compile(graphics_, material, node, textures, uniforms, vs, ps);
+			Compile(graphics_, material, node, textures, uniforms, gradients, fixedGradients, vs, ps);
 
 			// update pin state
 			for (auto behavior : node->Parameter->BehaviorComponents)
@@ -858,7 +866,7 @@ void Editor::UpdateNodes()
 				}
 			}
 
-			preview->CompileShader(vs, ps, textures, uniforms);
+			preview->CompileShader(vs, ps, textures, uniforms, gradients, fixedGradients);
 
 			material->ClearDirty(node);
 			material->ClearContentDirty(node);
@@ -1545,7 +1553,6 @@ void Editor::UpdateParameterEditor(std::shared_ptr<Node> node)
 
 			if (ImGradientHDR(node->GUID, state, tempState))
 			{
-
 			}
 
 			if (tempState.selectedMarkerType == ImGradientHDRMarkerType::Color)

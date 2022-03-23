@@ -448,10 +448,75 @@ static const char g_header_fs_gl3_src[] = ""
 										  "uniform vec4 customData1;\n"	 // HACK
 										  "uniform vec4 customData2;\n"; // HACK
 
+static const char* g_def_gradient = R"(
+
+struct Gradient
+{
+	int colorCount;
+	int alphaCount;
+	int reserved1;
+	int reserved2;
+	vec4 colors[8];
+	vec2 alphas[8];
+};
+
+vec4 SampleGradient(Gradient gradient, float t)
+{
+	vec3 color = gradient.colors[0].xyz;
+	for(int i = 1; i < 8; i++)
+	{
+		float a = clamp((t - gradient.colors[i-1].w) / (gradient.colors[i].w - gradient.colors[i-1].w), 0.0, 1.0) * step(i, gradient.colorCount-1);
+		color = mix(color, gradient.colors[i].xyz, a);
+	}
+
+	float alpha = gradient.alphas[0].x;
+	for(int i = 1; i < 8; i++)
+	{
+		float a = clamp((t - gradient.alphas[i-1].y) / (gradient.alphas[i].y - gradient.alphas[i-1].y), 0.0, 1.0) * step(i, gradient.alphaCount-1);
+		alpha = mix(alpha, gradient.alphas[i].x, a);
+	}
+
+	return vec4(color, alpha);
+}
+
+)";
+
+static std::string GetFixedGradient(const char* name, const Gradient& gradient)
+{
+	std::stringstream ss;
+
+	ss << "Gradient " << name << "() {" << std::endl;
+	ss << "Gradient g;" << std::endl;
+	ss << "g.colorCount = " << gradient.ColorCount << ";" << std::endl;
+	ss << "g.alphaCount = " << gradient.AlphaCount << ";" << std::endl;
+	ss << "g.reserved1 = 0;" << std::endl;
+	ss << "g.reserved2 = 0;" << std::endl;
+
+	for (int32_t i = 0; i < gradient.ColorCount; i++)
+	{
+		ss << "g.colors[" << i << "].x = " << gradient.Colors[i].Color[0] * gradient.Colors[i].Intensity << ";" << std::endl;
+		ss << "g.colors[" << i << "].y = " << gradient.Colors[i].Color[1] * gradient.Colors[i].Intensity << ";" << std::endl;
+		ss << "g.colors[" << i << "].z = " << gradient.Colors[i].Color[2] * gradient.Colors[i].Intensity << ";" << std::endl;
+		ss << "g.colors[" << i << "].q = " << gradient.Colors[i].Position << ";" << std::endl;
+	}
+
+	for (int32_t i = 0; i < gradient.AlphaCount; i++)
+	{
+		ss << "g.alphas[" << i << "].x = " << gradient.Alphas[i].Alpha << ";" << std::endl;
+		ss << "g.alphas[" << i << "].y = " << gradient.Alphas[i].Position << ";" << std::endl;
+	}
+
+	ss << "return g; }" << std::endl;
+
+	return ss.str();
+}
+
 bool Preview::CompileShader(std::string& vs,
 							std::string& ps,
 							std::vector<std::shared_ptr<TextureWithSampler>> textures,
-							std::vector<std::shared_ptr<TextExporterUniform>>& uniforms)
+							std::vector<std::shared_ptr<TextExporterUniform>>& uniforms,
+							std::vector<std::shared_ptr<TextExporterGradient>>& gradients,
+							std::vector<std::shared_ptr<TextExporterGradient>>& fixedGradients)
 {
 	VS = vs;
 	PS = ps;

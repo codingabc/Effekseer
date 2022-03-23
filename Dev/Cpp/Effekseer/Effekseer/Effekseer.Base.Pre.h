@@ -783,6 +783,9 @@ using ModelLoaderRef = RefPtr<ModelLoader>;
 using CurveLoaderRef = RefPtr<CurveLoader>;
 using ProceduralModelGeneratorRef = RefPtr<ProceduralModelGenerator>;
 
+// TODO : Improve
+struct Gradient;
+
 /**
 	@brief	This object generates random values.
 */
@@ -937,7 +940,8 @@ struct MaterialRenderData
 	//! used uniforms in MaterialType::File
 	std::vector<std::array<float, 4>> MaterialUniforms;
 
-	std::vector<Gradient> MaterialGradients;
+	//! TODO improve
+	std::vector<std::shared_ptr<Gradient>> MaterialGradients;
 };
 
 /**

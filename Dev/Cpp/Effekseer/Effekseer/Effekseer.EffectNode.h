@@ -363,7 +363,8 @@ struct ParameterRendererCommon
 					MaterialData.MaterialGradients.resize(gradients);
 					for (size_t i = 0; i < MaterialData.MaterialGradients.size(); i++)
 					{
-						MaterialData.MaterialGradients[i].Load(pos, version);
+						MaterialData.MaterialGradients[i] = std::make_shared<Gradient>();
+						MaterialData.MaterialGradients[i]->Load(pos, version);
 					}
 				}
 			}
